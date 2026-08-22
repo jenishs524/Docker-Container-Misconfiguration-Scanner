@@ -1,70 +1,76 @@
 # 🐳 Docker Container Misconfiguration Scanner
 
+[![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Security Level](https://img.shields.io/badge/security-Container%20Hardening-red.svg)](#)
+[![Benchmark](https://img.shields.io/badge/CIS-Docker%20Benchmark-blue.svg)](https://www.cisecurity.org/)
+
 An automated container security auditor written in Python. Evaluates running Docker containers, image configurations, daemon security flags, and host-level container settings against CIS Docker Benchmarks and container hardening standards.
 
 ---
 
-## 📌 Overview
+## 📌 Executive Overview
 
 Containers running with root privileges, exposed sockets, or missing resource boundaries represent critical privilege escalation vectors. This scanner inspects container host environments and running container runtimes to flag security misconfigurations, offering actionable remediation steps.
 
 ---
 
-## ✨ Key Features
+## ✨ Advanced Features
 
 - 🔑 **Privilege Audit**: Identifies containers running as root (`UID 0`) or configured with `--privileged`.
 - 🔌 **Socket Exposure Detection**: Flags dangerous host bind-mounts of `/var/run/docker.sock`.
 - 🛡️ **Linux Capabilities Inspection**: Audits dropped vs. retained Linux kernel capabilities (`CAP_SYS_ADMIN`, `NET_ADMIN`).
 - 📁 **Filesystem Security**: Verifies if container root filesystems are mounted read-only (`--read-only`).
-- ⚡ **Resource Limits Audit**: Detects missing CPU (`--cpus`) and memory (`--memory`) constraints to prevent Denial of Service (resource starvation).
+- ⚡ **Resource Limits Audit**: Detects missing CPU (`--cpus`) and memory (`--memory`) constraints to prevent Denial of Service.
 - 🌐 **Network Exposure Checks**: Flags dangerous port bindings (e.g., binding container ports to `0.0.0.0` instead of `127.0.0.1`).
-- 📦 **Fallback Dual Execution Engine**: Executes seamlessly via the Python Docker API or falls back to native system `docker` CLI subprocessing.
+- 📦 **Dual Execution Engine**: Executes seamlessly via the Python Docker API or falls back to native system `docker` CLI subprocessing.
 
 ---
 
 ## 🏗️ Audit Workflow
 
 ```
-┌────────────────────────────────────────────────────────┐
-│              Docker Misconfiguration Scanner           │
-└───────────────────────────┬────────────────────────────┘
-                            │ Check Environment Access
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│     Dual Inspection Engine (Docker Socket / Subprocess) │
-└───────────────────────────┬────────────────────────────┘
-                            │
-        ┌───────────────────┼───────────────────┐
-        ▼                   ▼                   ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Privileges & │    │ Filesystem & │    │ Resource &   │
-│ Root User    │    │ Socket Mounts│    │ Network Caps │
-└───────┬──────┘    └───────┬──────┘    └───────┬──────┘
-        └───────────────────┼───────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│        JSON Report Generation & Security Score          │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Docker Misconfiguration Scanner                          │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ Check Host Docker Access
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│          Dual Inspection Engine (Docker Socket / CLI Subprocess)            │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+        ┌──────────────────────────────┼──────────────────────────────┐
+        ▼                              ▼                              ▼
+┌──────────────┐               ┌──────────────┐               ┌──────────────┐
+│ Privileges & │               │ Filesystem & │               │ Resource &   │
+│ Root User    │               │ Socket Mounts│               │ Network Caps │
+└───────┬──────┘               └───────┬──────┘               └───────┬──────┘
+        └──────────────────────────────┼──────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│           JSON Audit Report Generation & CIS Alignment Summary              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 Prerequisites & Dependencies
+## 📋 Prerequisites & Setup
 
-- **Python 3.8+**
-- **Docker Engine (Optional)**: If Docker is running on the host system, the scanner will execute active audits against live containers. If Docker is absent, mock containers are evaluated for demonstration purposes.
+```bash
+pip install docker
+```
+*(Optional: Docker daemon running on host for live container scanning).*
 
 ---
 
-## 🚀 How to Use
+## 🚀 Usage & Integration Guide
 
-### 1. Run Misconfiguration Scan
+### 1. Direct Execution
 ```bash
 python3 main.py
 ```
 
-### 2. Programmatic Python Execution
+### 2. Programmatic Python Integration
 ```python
 from main import DockerScanner
 
@@ -94,7 +100,10 @@ for finding in results:
 
 ---
 
-## 🛡️ Defensive Value
+## 🛡️ OWASP Alignment & Threat Mitigation Matrix
 
-- **Container Hardening**: Ensures compliance with CIS Docker Benchmarks and DevSecOps container standards.
-- **Privilege Escalation Prevention**: Prevents host compromise stemming from container breakout attacks.
+| Threat Vector | Attack Description | Engine Countermeasure |
+|---|---|---|
+| **Container Breakout** | Attacker leverages root privileges inside container to escape to host. | Flags UID 0 and `--privileged` flags. |
+| **Docker Socket Abuse** | Mounting `/var/run/docker.sock` allows full control over host Docker. | Audits container volume mounts for socket paths. |
+| **Resource Exhaustion** | Unbounded container consumes host CPU/Memory causing host crash. | Verifies CPU and memory limits on container runtime settings. |
